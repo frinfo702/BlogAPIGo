@@ -27,7 +27,7 @@ var (
 		ID:          1,
 		Title:       "First Article",
 		Contents:    "This is the first test article",
-		Username:    "ken",
+		UserName:    "ken",
 		NiceNum:     1,
 		CommentList: []Comment{Comment1, Comment2},
 		CreatedAt:   time.Now(),
@@ -36,7 +36,7 @@ var (
 		ID:        2,
 		Title:     "Second Article",
 		Contents:  "This is the second test article",
-		Username:  "ken",
+		UserName:  "ken",
 		NiceNum:   2,
 		CreatedAt: time.Now(),
 	}

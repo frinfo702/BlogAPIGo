@@ -2,9 +2,8 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -20,37 +19,18 @@ func HelloHandler(w http.ResponseWriter, req *http.Request) {
 
 // POST /articleのハンドラ
 func PostArticleHandler(w http.ResponseWriter, req *http.Request) {
-	// リクエストヘッドから長さを取得
-	length, err := strconv.Atoi(req.Header.Get("Content-Length"))
-	if err != nil {
-		errMsg := fmt.Sprintln("failed to get contents-length")
-		http.Error(w, errMsg, http.StatusBadRequest)
-	}
-	reqBodyBuffer := make([]byte, length) // 読み取った長さ分のバイト列を作成
-
-	// 2. Readメソッドでリクエストボディを読み出し
-	if _, err := req.Body.Read(reqBodyBuffer); !errors.Is(err, io.EOF) {
-		http.Error(w, "failed to get request body", http.StatusBadRequest)
-		return
-	}
-
-	// 3. ボディをcloseする
-	defer req.Body.Close()
 
 	var reqArticle models.Article // デコードされた結果を受け取る構造体
-	if err := json.Unmarshal(reqBodyBuffer, &reqArticle); err != nil {
-		errMsg := fmt.Sprintln("failed to decord json")
-		http.Error(w, errMsg, http.StatusBadRequest)
+
+	// 受け取ったjsonを構造体にデコード
+	if err := json.NewDecoder(req.Body).Decode(&reqArticle); err != nil {
+		http.Error(w, "failed to decord json\n", http.StatusBadRequest)
 	}
 
 	article := reqArticle
-	jsonData, err := json.Marshal(article)
-	if err != nil {
-		http.Error(w, "failed to encord json\n", http.StatusInternalServerError)
-		return
-	}
 
-	w.Write(jsonData)
+	// 構造体を再度jsonにエンコード
+	json.NewEncoder(w).Encode(article)
 }
 
 // GET /article/list のハンドラ
@@ -70,13 +50,14 @@ func ArticleListHandler(w http.ResponseWriter, req *http.Request) {
 		page = 1
 	}
 	articles := []models.Article{models.Article1, models.Article2}
-	jsonData, err := json.Marshal(articles)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to encord json page:%d\n", page)
-		http.Error(w, errMsg, http.StatusInternalServerError)
+
+	// jsonにエンコード
+	if err := json.NewEncoder(w).Encode(articles); err != nil {
+		http.Error(w, "failed to encord json\n", http.StatusBadRequest)
 	}
 
-	w.Write(jsonData)
+	// logが未定義になるのを避けるための処理
+	log.Println(page)
 }
 
 // GET /article/{id}のハンドラ
@@ -88,33 +69,42 @@ func ArticleDetailHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	article := models.Article1
-	jsonData, err := json.Marshal(article)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to encord json (Article ID: %d\n)", articleID)
-		http.Error(w, errMsg, http.StatusInternalServerError)
+
+	if err := json.NewEncoder(w).Encode(article); err != nil {
+		http.Error(w, "failed to encord json\n", http.StatusBadRequest)
 	}
 
-	w.Write(jsonData)
+	// articleIDが未定義になるのを避けるための処理
+	log.Println(articleID)
+
 }
 
 // POST /article/niceのハンドラ
 func PostNiceHandler(w http.ResponseWriter, req *http.Request) {
-	article := models.Article1
-	jsonData, err := json.Marshal(article)
-	if err != nil {
-		errMsg := fmt.Sprintln("failed to encord json")
-		http.Error(w, errMsg, http.StatusInternalServerError)
+	var reqArticle models.Article
+
+	// 受け取ったjsonをデコード
+	if err := json.NewDecoder(req.Body).Decode(&reqArticle); err != nil {
+		http.Error(w, "failed to decode json\n", http.StatusBadRequest)
 	}
-	w.Write(jsonData)
+
+	// 再度jsonに直して表示(機能の検証のためなので無意味)
+	article := reqArticle
+	if err := json.NewEncoder(w).Encode(article); err != nil {
+		http.Error(w, "failed to encode json\n", http.StatusBadRequest)
+	}
 }
 
 // POST /commentのハンドラ
 func PostCommentHandler(w http.ResponseWriter, req *http.Request) {
-	article := models.Article1
-	jsonData, err := json.Marshal(article)
-	if err != nil {
-		errMsg := fmt.Sprintln("failed to encord json")
-		http.Error(w, errMsg, http.StatusInternalServerError)
+	// jsonをデコード
+	var reqArticle models.Article
+	if err := json.NewDecoder(req.Body).Decode(&reqArticle); err != nil {
+		http.Error(w, "failed to decode json\n", http.StatusBadRequest)
 	}
-	w.Write(jsonData)
+
+	// 機能検証のため再度エンコード
+	article := reqArticle
+	json.NewEncoder(w).Encode(article)
+
 }
