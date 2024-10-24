@@ -30,4 +30,5 @@ func insertComment(db *sql.DB, comment models.Comment) (models.Comment, error) {
 
 }
 
+// TODO
 // 指定された記事IDについているコメントを取得する関数

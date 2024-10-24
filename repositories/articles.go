@@ -34,21 +34,21 @@ func InsertArticle(db *sql.DB, article models.Article) (models.Article, error) {
 }
 
 // 変数pageで指定されたデータを取得する関数
-func selectArticleList(db *sql.DB, page int) ([]models.Article, error) {
+func SelectArticleList(db *sql.DB, page int) ([]models.Article, error) {
 	const sqlGetArticlesInPage = `
 		select article_id, title, contents, username, nice
 		from articles
 		limit ? offset ?;
 	`
 
-	rows, err := db.Query(sqlGetArticlesInPage, articleNumPerPage, (page-1)*articleNumPerPage)
+	rows, err := db.Query(sqlGetArticlesInPage, articleNumPerPage, ((page - 1) * articleNumPerPage))
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
 	// 取得したデータを入れるための構造体配列
-	articleArray := make([]models.Article, articleNumPerPage)
+	articleArray := make([]models.Article, 0)
 	// 取得したデータを構造体に格納していく
 	for rows.Next() {
 		var article models.Article
@@ -60,7 +60,7 @@ func selectArticleList(db *sql.DB, page int) ([]models.Article, error) {
 }
 
 // 指定されたIDの投稿を取得する関数
-func selectArticleDetail(db *sql.DB, articleId int) (models.Article, error) {
+func SelectArticleDetail(db *sql.DB, articleId int) (models.Article, error) {
 	// クエリを定義
 	const sqlGetArticle = `
 		select *
@@ -77,7 +77,7 @@ func selectArticleDetail(db *sql.DB, articleId int) (models.Article, error) {
 	// データを構造体に格納
 	var article models.Article
 	var createdTime sql.NullTime
-	err := row.Scan(article.ID, article.Contents, article.UserName, article.NiceNum, &createdTime)
+	err := row.Scan(&article.ID, &article.Title, &article.Contents, &article.UserName, &article.NiceNum, &createdTime)
 	if err != nil {
 		return models.Article{}, err
 	}
