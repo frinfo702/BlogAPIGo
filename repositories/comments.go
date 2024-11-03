@@ -6,29 +6,52 @@ import (
 	"github.com/frinfo702/MyApi/models"
 )
 
-// commentsテーブルを操作する関連処理を実装する
-
-// 新規コメントを追加する関数
-func insertComment(db *sql.DB, comment models.Comment) (models.Comment, error) {
-	// クエリの定義
+// 新規投稿をDBにinsertする関数
+func InsertComment(db *sql.DB, comment models.Comment) (models.Comment, error) {
 	const sqlStr = `
-		insert into comments (article_id, message, created_at)
-		values (?, ?, now())
+		insert into comments (article_id, message, created_at) values
+		(?, ?, now());
 	`
-
 	var newComment models.Comment
 	newComment.ArticleID, newComment.Message = comment.ArticleID, comment.Message
-	result, err := db.Exec(sqlStr, newComment.ArticleID, newComment.Message)
+
+	result, err := db.Exec(sqlStr, comment.ArticleID, comment.Message)
 	if err != nil {
 		return models.Comment{}, err
 	}
 
-	newCommentID, _ := result.LastInsertId()
-	newComment.CommentID = int(newCommentID)
+	id, _ := result.LastInsertId()
+	newComment.CommentID = int(id)
 
 	return newComment, nil
-
 }
 
-// TODO
-// 指定された記事IDについているコメントを取得する関数
+// 指定IDの記事についたコメント一覧を取得する関数
+func SelectCommentList(db *sql.DB, articleID int) ([]models.Comment, error) {
+	const sqlStr = `
+		select *
+		from comments
+		where article_id = ?;
+	`
+
+	rows, err := db.Query(sqlStr, articleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	commentArray := make([]models.Comment, 0)
+	for rows.Next() {
+		var comment models.Comment
+		var createdTime sql.NullTime
+		rows.Scan(&comment.CommentID, &comment.ArticleID, &comment.Message, &createdTime)
+
+		if createdTime.Valid {
+			comment.CreatedAt = createdTime.Time
+		}
+
+		commentArray = append(commentArray, comment)
+	}
+
+	return commentArray, nil
+}
