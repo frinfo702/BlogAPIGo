@@ -90,7 +90,7 @@ func SelectArticleDetail(db *sql.DB, articleId int) (models.Article, error) {
 }
 
 // 指定されたIDの投稿のいいね数を+1updateする関数
-func updateNiceNum(db *sql.DB, artilceId int) error {
+func UpdateNiceNum(db *sql.DB, artilceId int) error {
 	// 取得と更新があるのでトランザクションを利用
 	// トランザクション開始
 	tx, err := db.Begin()

@@ -2,20 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
-	"io"
 	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/frinfo702/MyApi/models"
+	"github.com/frinfo702/MyApi/services"
 	"github.com/gorilla/mux"
 )
-
-// GET /helloのハンドラ
-func HelloHandler(w http.ResponseWriter, req *http.Request) {
-	io.WriteString(w, "Hello, world\n")
-
-}
 
 // POST /articleのハンドラ
 func PostArticleHandler(w http.ResponseWriter, req *http.Request) {
@@ -26,6 +20,8 @@ func PostArticleHandler(w http.ResponseWriter, req *http.Request) {
 	if err := json.NewDecoder(req.Body).Decode(&reqArticle); err != nil {
 		http.Error(w, "failed to decord json\n", http.StatusBadRequest)
 	}
+
+	// post article received
 
 	article := reqArticle
 
@@ -68,15 +64,15 @@ func ArticleDetailHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	article := models.Article1
+	article, err := services.GetArticleService(articleID)
+	if err != nil {
+		http.Error(w, "failed to exec\n", http.StatusInternalServerError)
+		return
+	}
 
 	if err := json.NewEncoder(w).Encode(article); err != nil {
 		http.Error(w, "failed to encord json\n", http.StatusBadRequest)
 	}
-
-	// articleIDが未定義になるのを避けるための処理
-	log.Println(articleID)
-
 }
 
 // POST /article/niceのハンドラ
@@ -98,13 +94,13 @@ func PostNiceHandler(w http.ResponseWriter, req *http.Request) {
 // POST /commentのハンドラ
 func PostCommentHandler(w http.ResponseWriter, req *http.Request) {
 	// jsonをデコード
-	var reqArticle models.Article
-	if err := json.NewDecoder(req.Body).Decode(&reqArticle); err != nil {
+	var reqComment models.Comment
+	if err := json.NewDecoder(req.Body).Decode(&reqComment); err != nil {
 		http.Error(w, "failed to decode json\n", http.StatusBadRequest)
 	}
 
 	// 機能検証のため再度エンコード
-	article := reqArticle
-	json.NewEncoder(w).Encode(article)
+	comment := reqComment
+	json.NewEncoder(w).Encode(comment)
 
 }
