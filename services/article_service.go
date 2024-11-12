@@ -34,14 +34,17 @@ func GetArticleService(articleID int) (models.Article, error) {
 	return article, nil
 }
 
+// POST /article
 func PostArticleService(article models.Article) (models.Article, error) {
 	db, err := connectDB()
 	if err != nil {
+		log.Printf("データベースとの接続に失敗しました: %v", err)
 		return article, err
 	}
 	defer db.Close()
 	newArticle, err := repositories.InsertArticle(db, article)
 	if err != nil {
+		log.Printf("failed to exec insert article query: %v", err)
 		return newArticle, err
 	}
 	return newArticle, nil

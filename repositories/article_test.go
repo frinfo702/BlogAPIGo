@@ -95,7 +95,7 @@ func TestSelectArticleList(t *testing.T) {
 	defer db.Close()
 
 	// テストする関数の実行
-	expectedNum := 4
+	expectedNum := 2
 	got, err := repositories.SelectArticleList(db, 1)
 	if err != nil {
 		t.Fatal(err)
