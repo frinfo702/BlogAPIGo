@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -22,11 +21,13 @@ func PostArticleHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// post article received
-
-	article := reqArticle
-
-	// 構造体を再度jsonにエンコード
-	json.NewEncoder(w).Encode(article)
+	insertedArticle, err := services.PostArticleService(reqArticle)
+	if err != nil {
+		http.Error(w, "failed to exec post article \n", http.StatusInternalServerError)
+		return
+	}
+	// 挿入したArticleを再度jsonにエンコード
+	json.NewEncoder(w).Encode(insertedArticle)
 }
 
 // GET /article/list のハンドラ
@@ -45,15 +46,18 @@ func ArticleListHandler(w http.ResponseWriter, req *http.Request) {
 	} else {
 		page = 1
 	}
-	articles := []models.Article{models.Article1, models.Article2}
+
+	articles, err := services.GetArticleListService(page)
+	if err != nil {
+		http.Error(w, "failed to exec\n", http.StatusInternalServerError)
+		return
+	}
 
 	// jsonにエンコード
 	if err := json.NewEncoder(w).Encode(articles); err != nil {
 		http.Error(w, "failed to encord json\n", http.StatusBadRequest)
 	}
 
-	// logが未定義になるのを避けるための処理
-	log.Println(page)
 }
 
 // GET /article/{id}のハンドラ
@@ -84,9 +88,15 @@ func PostNiceHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "failed to decode json\n", http.StatusBadRequest)
 	}
 
-	// 再度jsonに直して表示(機能の検証のためなので無意味)
-	article := reqArticle
-	if err := json.NewEncoder(w).Encode(article); err != nil {
+	// Niceをupdate
+	updatedArticle, err := services.PostNiceService(reqArticle)
+	if err != nil {
+		http.Error(w, "failed to exec update nice num query\n", http.StatusInternalServerError)
+		return
+	}
+
+	// 再度jsonにエンコードしてレスポンスを返す
+	if err := json.NewEncoder(w).Encode(updatedArticle); err != nil {
 		http.Error(w, "failed to encode json\n", http.StatusBadRequest)
 	}
 }
@@ -99,8 +109,14 @@ func PostCommentHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "failed to decode json\n", http.StatusBadRequest)
 	}
 
-	// 機能検証のため再度エンコード
-	comment := reqComment
+	// コメントを投稿
+	comment, err := services.PostCommentService(reqComment)
+	if err != nil {
+		http.Error(w, "failed to exec post comment query\n", http.StatusInternalServerError)
+		return
+	}
+
+	// 再度jsonにしてレスポンスに書き込む
 	json.NewEncoder(w).Encode(comment)
 
 }

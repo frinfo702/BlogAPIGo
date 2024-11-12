@@ -3,6 +3,7 @@ package services
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -18,6 +19,7 @@ var (
 func connectDB() (*sql.DB, error) {
 	db, err := sql.Open("mysql", dbConn)
 	if err != nil {
+		log.Printf("データベース接続エラー: %v", err)
 		return nil, err
 	}
 	return db, nil

@@ -1,0 +1,3 @@
+cleanup exit status 1
+FAIL	github.com/frinfo702/MyApi/repositories	0.264s
+FAIL

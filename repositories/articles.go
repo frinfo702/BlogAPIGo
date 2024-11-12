@@ -2,79 +2,73 @@ package repositories
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/frinfo702/MyApi/models"
 )
 
-const articleNumPerPage = 5
+const (
+	articleNumPerPage = 5
+)
 
-// articleテーブルを操作する処理
-// 新規投稿をデータベースにinsertする関数
+// 新規投稿をDBにinsertする関数
 func InsertArticle(db *sql.DB, article models.Article) (models.Article, error) {
 	const sqlStr = `
 	insert into articles (title, contents, username, nice, created_at) values
 	(?, ?, ?, 0, now());
 	`
-	// 挿入したのはこんなデータだよーと教えるための構造体
+
 	var newArticle models.Article
 	newArticle.Title, newArticle.Contents, newArticle.UserName = article.Title, article.Contents, article.UserName
 
 	result, err := db.Exec(sqlStr, article.Title, article.Contents, article.UserName)
 	if err != nil {
-		fmt.Println(err)
 		return models.Article{}, err
-	} else {
-		insertID, _ := result.LastInsertId()
-		newArticle.ID = int(insertID)
-		return newArticle, nil
-
 	}
 
+	id, _ := result.LastInsertId()
+
+	newArticle.ID = int(id)
+
+	return newArticle, nil
 }
 
-// 変数pageで指定されたデータを取得する関数
+// 投稿一覧をDBから取得する関数
 func SelectArticleList(db *sql.DB, page int) ([]models.Article, error) {
-	const sqlGetArticlesInPage = `
+	const sqlStr = `
 		select article_id, title, contents, username, nice
 		from articles
 		limit ? offset ?;
 	`
 
-	rows, err := db.Query(sqlGetArticlesInPage, articleNumPerPage, ((page - 1) * articleNumPerPage))
+	rows, err := db.Query(sqlStr, articleNumPerPage, ((page - 1) * articleNumPerPage))
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	// 取得したデータを入れるための構造体配列
 	articleArray := make([]models.Article, 0)
-	// 取得したデータを構造体に格納していく
 	for rows.Next() {
 		var article models.Article
 		rows.Scan(&article.ID, &article.Title, &article.Contents, &article.UserName, &article.NiceNum)
+
 		articleArray = append(articleArray, article)
 	}
-	return articleArray, nil
 
+	return articleArray, nil
 }
 
-// 指定されたIDの投稿を取得する関数
-func SelectArticleDetail(db *sql.DB, articleId int) (models.Article, error) {
-	// クエリを定義
-	const sqlGetArticle = `
+// 投稿IDを指定して、記事データを取得する関数
+func SelectArticleDetail(db *sql.DB, articleID int) (models.Article, error) {
+	const sqlStr = `
 		select *
 		from articles
-		where article_id = ?
+		where article_id = ?;
 	`
-
-	// 取得したデータを取り扱うためのrows
-	row := db.QueryRow(sqlGetArticle, articleId)
+	row := db.QueryRow(sqlStr, articleID)
 	if err := row.Err(); err != nil {
 		return models.Article{}, err
 	}
 
-	// データを構造体に格納
 	var article models.Article
 	var createdTime sql.NullTime
 	err := row.Scan(&article.ID, &article.Title, &article.Contents, &article.UserName, &article.NiceNum, &createdTime)
@@ -89,49 +83,40 @@ func SelectArticleDetail(db *sql.DB, articleId int) (models.Article, error) {
 	return article, nil
 }
 
-// 指定されたIDの投稿のいいね数を+1updateする関数
-func UpdateNiceNum(db *sql.DB, artilceId int) error {
-	// 取得と更新があるのでトランザクションを利用
-	// トランザクション開始
+// いいねの数をupdateする関数
+func UpdateNiceNum(db *sql.DB, articleID int) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
 
-	// データ取得
-	const sqlGetNiceNum = `
-		select nice 
-		from artilces
-		where article_id = ?
+	const sqlGetNice = `
+		select nice
+		from articles
+		where article_id = ?;
 	`
-	// 取得したデータを取り扱う
-	row := db.QueryRow(sqlGetNiceNum, artilceId)
-
-	if err = row.Err(); err != nil {
+	row := tx.QueryRow(sqlGetNice, articleID)
+	if err := row.Err(); err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	var niceNum int
-	if err := row.Scan(&niceNum); err != nil {
+	var nicenum int
+	err = row.Scan(&nicenum)
+	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// データを更新
-	const sqlUpdateNiceNum = `
-		update articles set nice = ? where article_id = ?
-	`
-	if _, err = tx.Exec(sqlGetNiceNum, niceNum+1, artilceId); err != nil {
+	const sqlUpdateNice = `update articles set nice = ? where article_id = ?`
+	_, err = tx.Exec(sqlUpdateNice, nicenum+1, articleID)
+	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// トランザクション終了
 	if err := tx.Commit(); err != nil {
-		fmt.Println("failed to finish transaction")
+		return err
 	}
-
 	return nil
-
 }
