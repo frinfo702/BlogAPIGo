@@ -10,21 +10,14 @@ import (
 // ハンドラ層が Article 構造体関連で呼び出したい処理
 
 // 指定IDの記事をデータベースから取得してくる
-func GetArticleService(articleID int) (models.Article, error) {
-	// TODO: sql.DB型を手に入れて変数dbに代入する
-	db, err := connectDB()
-	if err != nil {
-		return models.Article{}, err
-	}
-	defer db.Close()
-
+func (s *MyappService) GetArticleService(articleID int) (models.Article, error) {
 	// 1. repositories層の関数SelectArticleDetailで記事の詳細を取得
-	article, err := repositories.SelectArticleDetail(db, articleID)
+	article, err := repositories.SelectArticleDetail(s.db, articleID)
 	if err != nil {
 		return models.Article{}, err
 	}
 	// 2. repositorries層の関数SelectCommentListでコメント一覧を取得
-	commentList, err := repositories.SelectCommentList(db, articleID)
+	commentList, err := repositories.SelectCommentList(s.db, articleID)
 	if err != nil {
 		return models.Article{}, err
 	}
@@ -35,14 +28,8 @@ func GetArticleService(articleID int) (models.Article, error) {
 }
 
 // POST /article
-func PostArticleService(article models.Article) (models.Article, error) {
-	db, err := connectDB()
-	if err != nil {
-		log.Printf("データベースとの接続に失敗しました: %v", err)
-		return article, err
-	}
-	defer db.Close()
-	newArticle, err := repositories.InsertArticle(db, article)
+func (s *MyappService) PostArticleService(article models.Article) (models.Article, error) {
+	newArticle, err := repositories.InsertArticle(s.db, article)
 	if err != nil {
 		log.Printf("failed to exec insert article query: %v", err)
 		return newArticle, err
@@ -51,14 +38,8 @@ func PostArticleService(article models.Article) (models.Article, error) {
 }
 
 // GET /article/listハンドラに対するサービス層
-func GetArticleListService(page int) ([]models.Article, error) {
-	db, err := connectDB()
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	articleArray, err := repositories.SelectArticleList(db, page)
+func (s *MyappService) GetArticleListService(page int) ([]models.Article, error) {
+	articleArray, err := repositories.SelectArticleList(s.db, page)
 	if err != nil {
 		log.Printf("データが取得できませんでした: %v", err)
 		return nil, err
@@ -68,15 +49,9 @@ func GetArticleListService(page int) ([]models.Article, error) {
 }
 
 // PostNiceHandlerでの使用を想定
-func PostNiceService(article models.Article) (models.Article, error) {
-	db, err := connectDB()
-	if err != nil {
-		log.Printf("データベースとの接続に失敗しました: %v", err)
-		return article, err
-	}
-
+func (s *MyappService) PostNiceService(article models.Article) (models.Article, error) {
 	articleID := article.ID // handlerが受け取った構造体からIdのみを取り出す
-	if err := repositories.UpdateNiceNum(db, articleID); err != nil {
+	if err := repositories.UpdateNiceNum(s.db, articleID); err != nil {
 		log.Printf("failed to update a number of nices %v", err)
 		return article, err
 	}
