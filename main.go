@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/frinfo702/MyApi/controllers"
+
 	"github.com/frinfo702/MyApi/services"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
@@ -23,21 +24,17 @@ var (
 func main() {
 	db, err := sql.Open("mysql", dbConn)
 	if err != nil {
-		log.Println("failed to connect DB")
+
+		log.Println("fail to connect DB")
+		return
 	}
+
 	ser := services.NewAppService(db)
 	con := controllers.NewMyAppController(ser)
 
-	r := mux.NewRouter()
+	r := routers.NewRouter(con)
 
-	// ハンドラの登録
-	r.HandleFunc("/article", con.PostArticleHandler).Methods(http.MethodPost)
-	r.HandleFunc("/article/list", con.ArticleListHandler).Methods(http.MethodGet)
-	r.HandleFunc("/article/{id:[0-9]+}", con.ArticleDetailHandler).Methods(http.MethodGet)
-	r.HandleFunc("/article/nice", con.PostNiceHandler).Methods(http.MethodPost)
-	r.HandleFunc("/comment", con.PostCommentHandler).Methods(http.MethodPost)
 
 	log.Println("server start at port 8080")
 	log.Fatal(http.ListenAndServe(":8080", r))
-
 }
