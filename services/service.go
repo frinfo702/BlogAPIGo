@@ -2,11 +2,11 @@ package services
 
 import "database/sql"
 
-type MyappService struct {
+type MyAppService struct {
 	db *sql.DB
 }
 
 // constructor
-func NewAppService(db *sql.DB) *MyappService {
-	return &MyappService{db: db}
+func NewAppService(db *sql.DB) *MyAppService {
+	return &MyAppService{db: db}
 }
