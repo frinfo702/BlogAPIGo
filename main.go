@@ -8,10 +8,10 @@ import (
 	"os"
 
 	"github.com/frinfo702/MyApi/controllers"
+	"github.com/frinfo702/MyApi/routers"
 
 	"github.com/frinfo702/MyApi/services"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/gorilla/mux"
 )
 
 var (
@@ -33,7 +33,6 @@ func main() {
 	con := controllers.NewMyAppController(ser)
 
 	r := routers.NewRouter(con)
-
 
 	log.Println("server start at port 8080")
 	log.Fatal(http.ListenAndServe(":8080", r))
