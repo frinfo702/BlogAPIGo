@@ -5,22 +5,21 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/frinfo702/MyApi/controllers/services"
 	"github.com/frinfo702/MyApi/models"
-	"github.com/frinfo702/MyApi/services"
 	"github.com/gorilla/mux"
 )
 
-type MyAppController struct {
-	service *services.MyAppService
+type ArticleController struct {
+	service services.ArticleServicer
 }
 
-// constructor
-func NewMyAppController(s *services.MyAppService) *MyAppController {
-	return &MyAppController{service: s}
+func NewArticleController(service services.ArticleServicer) *ArticleController {
+	return &ArticleController{service: service}
 }
 
 // POST /articleのハンドラ
-func (c *MyAppController) PostArticleHandler(w http.ResponseWriter, req *http.Request) {
+func (c *ArticleController) PostArticleHandler(w http.ResponseWriter, req *http.Request) {
 
 	var reqArticle models.Article // デコードされた結果を受け取る構造体
 
@@ -40,7 +39,7 @@ func (c *MyAppController) PostArticleHandler(w http.ResponseWriter, req *http.Re
 }
 
 // GET /article/list のハンドラ
-func (c *MyAppController) ArticleListHandler(w http.ResponseWriter, req *http.Request) {
+func (c *ArticleController) ArticleListHandler(w http.ResponseWriter, req *http.Request) {
 	queryMap := req.URL.Query()
 
 	var page int
@@ -70,7 +69,7 @@ func (c *MyAppController) ArticleListHandler(w http.ResponseWriter, req *http.Re
 }
 
 // GET /article/{id}のハンドラ
-func (c *MyAppController) ArticleDetailHandler(w http.ResponseWriter, req *http.Request) {
+func (c *ArticleController) ArticleDetailHandler(w http.ResponseWriter, req *http.Request) {
 	articleID, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
 		http.Error(w, "Invalid query parameter", http.StatusBadRequest)
@@ -89,7 +88,7 @@ func (c *MyAppController) ArticleDetailHandler(w http.ResponseWriter, req *http.
 }
 
 // POST /article/niceのハンドラ
-func (c *MyAppController) PostNiceHandler(w http.ResponseWriter, req *http.Request) {
+func (c *ArticleController) PostNiceHandler(w http.ResponseWriter, req *http.Request) {
 	var reqArticle models.Article
 
 	// 受け取ったjsonをデコード
@@ -108,24 +107,4 @@ func (c *MyAppController) PostNiceHandler(w http.ResponseWriter, req *http.Reque
 	if err := json.NewEncoder(w).Encode(updatedArticle); err != nil {
 		http.Error(w, "failed to encode json\n", http.StatusBadRequest)
 	}
-}
-
-// POST /commentのハンドラ
-func (c *MyAppController) PostCommentHandler(w http.ResponseWriter, req *http.Request) {
-	// jsonをデコード
-	var reqComment models.Comment
-	if err := json.NewDecoder(req.Body).Decode(&reqComment); err != nil {
-		http.Error(w, "failed to decode json\n", http.StatusBadRequest)
-	}
-
-	// コメントを投稿
-	comment, err := c.service.PostCommentService(reqComment)
-	if err != nil {
-		http.Error(w, "failed to exec post comment query\n", http.StatusInternalServerError)
-		return
-	}
-
-	// 再度jsonにしてレスポンスに書き込む
-	json.NewEncoder(w).Encode(comment)
-
 }
