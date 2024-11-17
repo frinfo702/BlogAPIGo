@@ -5,17 +5,17 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/frinfo702/MyApi/controllers/services"
 	"github.com/frinfo702/MyApi/models"
-	"github.com/frinfo702/MyApi/services"
 	"github.com/gorilla/mux"
 )
 
 type MyAppController struct {
-	service *services.MyAppService
+	service services.MyAppServicer
 }
 
 // constructor
-func NewMyAppController(s *services.MyAppService) *MyAppController {
+func NewMyAppController(s services.MyAppServicer) *MyAppController {
 	return &MyAppController{service: s}
 }
 
