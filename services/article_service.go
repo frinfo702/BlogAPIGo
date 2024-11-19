@@ -3,6 +3,7 @@ package services
 import (
 	"log"
 
+	"github.com/frinfo702/MyApi/apperrors"
 	"github.com/frinfo702/MyApi/models"
 	"github.com/frinfo702/MyApi/repositories"
 )
@@ -32,6 +33,7 @@ func (s *MyAppService) PostArticleService(article models.Article) (models.Articl
 	newArticle, err := repositories.InsertArticle(s.db, article)
 	if err != nil {
 		log.Printf("failed to exec insert article query: %v", err)
+		err = apperrors.InsertDataFailed.Wrap(err, "failed to insert artile")
 		return newArticle, err
 	}
 	return newArticle, nil
