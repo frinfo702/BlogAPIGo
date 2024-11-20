@@ -3,6 +3,7 @@ package services
 import (
 	"log"
 
+	"github.com/frinfo702/MyApi/apperrors"
 	"github.com/frinfo702/MyApi/models"
 	"github.com/frinfo702/MyApi/repositories"
 )
@@ -12,8 +13,8 @@ import (
 func (s *MyAppService) PostCommentService(comment models.Comment) (models.Comment, error) {
 
 	insertedComment, err := repositories.InsertComment(s.db, comment)
-
 	if err != nil {
+		err = apperrors.InsertDataFailed.Wrap(err, "failed to insert new comment")
 		log.Printf("failed to insert new comment: %v", err)
 		return comment, err
 	}

@@ -14,6 +14,8 @@ const (
 	InsertDataFailed ErrCode = "S001"
 	FetchDataFailed  ErrCode = "S002" // failed to exec select query
 	EmptyData        ErrCode = "S003" // chosse article is not found
+	NoTargetData     ErrCode = "S004" //
+	UpdateDataFailed ErrCode = "S005" // failed to update a number of nices
 )
 
 func (myErr *MyAppError) Error() string {

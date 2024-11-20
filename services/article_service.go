@@ -71,8 +71,17 @@ func (s *MyAppService) GetArticleListService(page int) ([]models.Article, error)
 // PostNiceHandlerでの使用を想定
 func (s *MyAppService) PostNiceService(article models.Article) (models.Article, error) {
 	articleID := article.ID // handlerが受け取った構造体からIdのみを取り出す
-	if err := repositories.UpdateNiceNum(s.db, articleID); err != nil {
-		log.Printf("failed to update a number of nices %v", err)
+	// error have two types:
+	// 1. not found error(article id not found)
+	// 2. database error (Internal server error)
+	err := repositories.UpdateNiceNum(s.db, articleID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			err = apperrors.FetchDataFailed.Wrap(err, "failed to update a number of nices")
+			log.Printf("failed to update a number of nices %v", err)
+			return article, err
+		}
+		err = apperrors.UpdateDataFailed.Wrap(err, "failed to update a number of nices")
 		return article, err
 	}
 
