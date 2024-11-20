@@ -24,6 +24,7 @@ func (c *ArticleController) PostArticleHandler(w http.ResponseWriter, req *http.
 	var reqArticle models.Article // デコードされた結果を受け取る構造体
 
 	// 受け取ったjsonを構造体にデコード
+	// TODO: 独自エラーMyAppErrorにラップ
 	if err := json.NewDecoder(req.Body).Decode(&reqArticle); err != nil {
 		http.Error(w, "failed to decord json\n", http.StatusBadRequest)
 	}
