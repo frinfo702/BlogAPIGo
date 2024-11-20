@@ -12,6 +12,8 @@ const (
 	Unknown ErrCode = "U000"
 
 	InsertDataFailed ErrCode = "S001"
+	FetchDataFailed  ErrCode = "S002" // failed to exec select query
+	EmptyData        ErrCode = "S003" // chosse article is not found
 )
 
 func (myErr *MyAppError) Error() string {
