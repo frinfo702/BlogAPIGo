@@ -11,11 +11,13 @@ type ErrCode string
 const (
 	Unknown ErrCode = "U000"
 
-	InsertDataFailed ErrCode = "S001"
-	FetchDataFailed  ErrCode = "S002" // failed to exec select query
-	EmptyData        ErrCode = "S003" // chosse article is not found
-	NoTargetData     ErrCode = "S004" //
-	UpdateDataFailed ErrCode = "S005" // failed to update a number of nices
+	InsertDataFailed    ErrCode = "S001"
+	FetchDataFailed     ErrCode = "S002" // failed to exec select query
+	EmptyData           ErrCode = "S003" // chosse article is not found
+	NoTargetData        ErrCode = "S004" //
+	UpdateDataFailed    ErrCode = "S005" // failed to update a number of nices
+	ReqBodyDecodeFailed ErrCode = "R001" // failed to decode json which is received from req body
+	BadParam            ErrCode = "R002" // e.g. to error for strconv.Atoi(1)
 )
 
 func (myErr *MyAppError) Error() string {

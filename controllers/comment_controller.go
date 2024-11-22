@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/frinfo702/MyApi/apperrors"
 	"github.com/frinfo702/MyApi/controllers/services"
 	"github.com/frinfo702/MyApi/models"
 )
@@ -21,7 +22,9 @@ func (c *CommentController) PostCommentHandler(w http.ResponseWriter, req *http.
 	// jsonをデコード
 	var reqComment models.Comment
 	if err := json.NewDecoder(req.Body).Decode(&reqComment); err != nil {
+		err = apperrors.ReqBodyDecodeFailed.Wrap(err, "failed to decode json")
 		http.Error(w, "failed to decode json\n", http.StatusBadRequest)
+
 	}
 
 	// コメントを投稿
