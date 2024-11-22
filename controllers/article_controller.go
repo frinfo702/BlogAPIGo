@@ -2,9 +2,11 @@ package controllers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
+	"github.com/frinfo702/MyApi/apperrors"
 	"github.com/frinfo702/MyApi/controllers/services"
 	"github.com/frinfo702/MyApi/models"
 	"github.com/gorilla/mux"
@@ -26,6 +28,8 @@ func (c *ArticleController) PostArticleHandler(w http.ResponseWriter, req *http.
 	// 受け取ったjsonを構造体にデコード
 	// TODO: 独自エラーMyAppErrorにラップ
 	if err := json.NewDecoder(req.Body).Decode(&reqArticle); err != nil {
+		err = apperrors.ReqBodyDecodeFailed.Wrap(err, "bad request body")
+		log.Println(err)
 		http.Error(w, "failed to decord json\n", http.StatusBadRequest)
 	}
 
@@ -49,6 +53,7 @@ func (c *ArticleController) ArticleListHandler(w http.ResponseWriter, req *http.
 		var err error
 		page, err = strconv.Atoi(p[0])
 		if err != nil {
+			err = apperrors.BadParam.Wrap(err, "query parameter must be number")
 			http.Error(w, "Invalid query parameter", http.StatusBadRequest)
 			return
 		}
@@ -73,6 +78,7 @@ func (c *ArticleController) ArticleListHandler(w http.ResponseWriter, req *http.
 func (c *ArticleController) ArticleDetailHandler(w http.ResponseWriter, req *http.Request) {
 	articleID, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
+		err = apperrors.BadParam.Wrap(err, "query parameter must be numbers")
 		http.Error(w, "Invalid query parameter", http.StatusBadRequest)
 		return
 	}
@@ -94,6 +100,7 @@ func (c *ArticleController) PostNiceHandler(w http.ResponseWriter, req *http.Req
 
 	// 受け取ったjsonをデコード
 	if err := json.NewDecoder(req.Body).Decode(&reqArticle); err != nil {
+		err = apperrors.ReqBodyDecodeFailed.Wrap(err, "failed to decode json")
 		http.Error(w, "failed to decode json\n", http.StatusBadRequest)
 	}
 
