@@ -23,14 +23,13 @@ func (c *CommentController) PostCommentHandler(w http.ResponseWriter, req *http.
 	var reqComment models.Comment
 	if err := json.NewDecoder(req.Body).Decode(&reqComment); err != nil {
 		err = apperrors.ReqBodyDecodeFailed.Wrap(err, "failed to decode json")
-		http.Error(w, "failed to decode json\n", http.StatusBadRequest)
-
+		apperrors.ErrorHandler(w, req, err)
 	}
 
 	// コメントを投稿
 	comment, err := c.service.PostCommentService(reqComment)
 	if err != nil {
-		http.Error(w, "failed to exec post comment query\n", http.StatusInternalServerError)
+		apperrors.ErrorHandler(w, req, err)
 		return
 	}
 
