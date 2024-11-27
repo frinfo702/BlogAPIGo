@@ -3,7 +3,7 @@ package apperrors
 type MyAppError struct {
 	ErrCode        // レスポンスとログに表示するエラーコード
 	Message string // レスポンスに表示するエラーメッセージ
-	Err     error  // エラーチェーンのための内部エラー
+	Err     error  `json:"-"` // internal error for internal process & judging error type
 }
 
 type ErrCode string
