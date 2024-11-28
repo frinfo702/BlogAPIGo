@@ -20,29 +20,29 @@ func NewArticleController(service services.ArticleServicer) *ArticleController {
 	return &ArticleController{service: service}
 }
 
-// POST /articleのハンドラ
+// Handler for POST /article
 func (c *ArticleController) PostArticleHandler(w http.ResponseWriter, req *http.Request) {
 
-	var reqArticle models.Article // デコードされた結果を受け取る構造体
+	var reqArticle models.Article // Struct to receive decoded result
 
-	// 受け取ったjsonを構造体にデコード
+	// Decode received JSON into struct
 	if err := json.NewDecoder(req.Body).Decode(&reqArticle); err != nil {
 		err = apperrors.ReqBodyDecodeFailed.Wrap(err, "bad request body")
 		log.Println(err)
 		apperrors.ErrorHandler(w, req, err)
 	}
 
-	// post article received
+	// Post article received
 	insertedArticle, err := c.service.PostArticleService(reqArticle)
 	if err != nil {
 		apperrors.ErrorHandler(w, req, err)
 		return
 	}
-	// 挿入したArticleを再度jsonにエンコード
+	// Encode the inserted Article back to JSON
 	json.NewEncoder(w).Encode(insertedArticle)
 }
 
-// GET /article/list のハンドラ
+// Handler for GET /article/list
 func (c *ArticleController) ArticleListHandler(w http.ResponseWriter, req *http.Request) {
 	queryMap := req.URL.Query()
 
@@ -66,14 +66,14 @@ func (c *ArticleController) ArticleListHandler(w http.ResponseWriter, req *http.
 		return
 	}
 
-	// jsonにエンコード
+	// Encode to JSON
 	if err := json.NewEncoder(w).Encode(articles); err != nil {
 		apperrors.ErrorHandler(w, req, err)
 	}
 
 }
 
-// GET /article/{id}のハンドラ
+// Handler for GET /article/{id}
 func (c *ArticleController) ArticleDetailHandler(w http.ResponseWriter, req *http.Request) {
 	articleID, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
@@ -93,24 +93,24 @@ func (c *ArticleController) ArticleDetailHandler(w http.ResponseWriter, req *htt
 	}
 }
 
-// POST /article/niceのハンドラ
+// Handler for POST /article/nice
 func (c *ArticleController) PostNiceHandler(w http.ResponseWriter, req *http.Request) {
 	var reqArticle models.Article
 
-	// 受け取ったjsonをデコード
+	// Decode received JSON
 	if err := json.NewDecoder(req.Body).Decode(&reqArticle); err != nil {
 		err = apperrors.ReqBodyDecodeFailed.Wrap(err, "failed to decode json")
 		apperrors.ErrorHandler(w, req, err)
 	}
 
-	// Niceをupdate
+	// Update Nice
 	updatedArticle, err := c.service.PostNiceService(reqArticle)
 	if err != nil {
 		apperrors.ErrorHandler(w, req, err)
 		return
 	}
 
-	// 再度jsonにエンコードしてレスポンスを返す
+	// Encode back to JSON and return response
 	if err := json.NewEncoder(w).Encode(updatedArticle); err != nil {
 		apperrors.ErrorHandler(w, req, err)
 	}
