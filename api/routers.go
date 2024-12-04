@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 
+	"github.com/frinfo702/MyApi/api/middlewares"
 	"github.com/frinfo702/MyApi/controllers"
 	"github.com/frinfo702/MyApi/services"
 	"github.com/gorilla/mux"
@@ -22,6 +23,7 @@ func NewRouter(db *sql.DB) *mux.Router {
 	r.HandleFunc("/article/nice", aCon.PostNiceHandler).Methods(http.MethodPost)
 	r.HandleFunc("/comment", cCon.PostCommentHandler).Methods(http.MethodPost)
 
+	r.Use(middlewares.LoggingMiddleware) // 全てのハンドラにミドルウェアを適用
 	return r
 
 }

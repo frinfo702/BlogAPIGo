@@ -85,7 +85,7 @@ func SelectArticleDetail(db *sql.DB, articleID int) (models.Article, error) {
 
 // いいねの数をupdateする関数
 func UpdateNiceNum(db *sql.DB, articleID int) error {
-	tx, err := db.Begin()
+	tx, err := db.Begin() // begin of transaction
 	if err != nil {
 		return err
 	}
