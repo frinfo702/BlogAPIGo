@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"log"
+	"sync"
 
 	"github.com/frinfo702/MyApi/apperrors"
 	"github.com/frinfo702/MyApi/models"
@@ -15,25 +16,52 @@ import (
 // 指定IDの記事をデータベースから取得してくる
 func (s *MyAppService) GetArticleService(articleID int) (models.Article, error) {
 	// 1. repositories層の関数SelectArticleDetailで記事の詳細を取得
-	article, err := repositories.SelectArticleDetail(s.db, articleID)
+	var article models.Article
+	var commentList []models.Comment
+	var articleGetError, commentListGetError error
+
+	// lock and wait
+	var amu sync.Mutex // article
+	var cmu sync.Mutex // comment
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func(db *sql.DB, articleID int) {
+		defer wg.Done()
+
+		// critical section
+		amu.Lock()
+		article, articleGetError = repositories.SelectArticleDetail(db, articleID)
+		amu.Unlock()
+	}(s.db, articleID)
 	// error have two types:
 	// 1. not found error(article id not found)
 	// 2. database error (Internal server error)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = apperrors.EmptyData.Wrap(err, "choose article is not found")
-			return models.Article{}, err
+	if articleGetError != nil {
+		if errors.Is(articleGetError, sql.ErrNoRows) {
+			articleGetError = apperrors.EmptyData.Wrap(articleGetError, "choose article is not found")
+			return models.Article{}, articleGetError
 		}
-		err = apperrors.FetchDataFailed.Wrap(err, "failed to exec select query")
-		return models.Article{}, err
+		articleGetError = apperrors.FetchDataFailed.Wrap(articleGetError, "failed to exec select query")
+		return models.Article{}, articleGetError
 	}
+
 	// 2. repositorries層の関数SelectCommentListでコメント一覧を取得
-	commentList, err := repositories.SelectCommentList(s.db, articleID)
-	if err != nil {
-		err = apperrors.FetchDataFailed.Wrap(err, "failed to exec select query")
-		return models.Article{}, err
+	go func(db *sql.DB, articleID int) {
+		defer wg.Done()
+
+		// critical section
+		cmu.Lock()
+		commentList, commentListGetError = repositories.SelectCommentList(db, articleID)
+		cmu.Unlock()
+	}(s.db, articleID)
+	if commentListGetError != nil {
+		commentListGetError = apperrors.FetchDataFailed.Wrap(commentListGetError, "failed to exec select query")
+		return models.Article{}, commentListGetError
 	}
+
 	// 3. 2で得たコメント一覧を1で得たArticle構造体に紐づける
+	wg.Wait() // wait above 2 sub goroutine
 	article.CommentList = append(article.CommentList, commentList...)
 
 	return article, nil
