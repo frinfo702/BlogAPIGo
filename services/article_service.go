@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"log"
-	"sync"
 
 	"github.com/frinfo702/MyApi/apperrors"
 	"github.com/frinfo702/MyApi/models"
@@ -15,28 +14,59 @@ import (
 
 // 指定IDの記事をデータベースから取得してくる
 func (s *MyAppService) GetArticleService(articleID int) (models.Article, error) {
+	// make vertex to deal with (article, err) at the same time
+	type articleResult struct {
+		article models.Article
+		err     error
+	}
+	// chan
+	articleChan := make(chan articleResult)
+	defer close(articleChan)
+
 	// 1. repositories層の関数SelectArticleDetailで記事の詳細を取得
 	var article models.Article
 	var commentList []models.Comment
 	var articleGetError, commentListGetError error
 
-	// lock and wait
-	var amu sync.Mutex // article
-	var cmu sync.Mutex // comment
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func(db *sql.DB, articleID int) {
-		defer wg.Done()
-
+	go func(ch chan<- articleResult, db *sql.DB, articleID int) {
 		// critical section
-		amu.Lock()
-		article, articleGetError = repositories.SelectArticleDetail(db, articleID)
-		amu.Unlock()
-	}(s.db, articleID)
+		article, err := repositories.SelectArticleDetail(db, articleID)
+		ch <- articleResult{article, err}
+	}(articleChan, s.db, articleID)
+
 	// error have two types:
 	// 1. not found error(article id not found)
 	// 2. database error (Internal server error)
+
+	// make vertex to deal with (commentList, err) at the same time
+	type commentResult struct {
+		commentList *[]models.Comment
+		err         error
+	}
+	// chan
+	CommentChan := make(chan commentResult)
+	defer close(CommentChan)
+
+	// 2. repositorries層の関数SelectCommentListでコメント一覧を取得
+	go func(ch chan<- commentResult, db *sql.DB, articleID int) {
+		// critical section
+		commentList, err := repositories.SelectCommentList(db, articleID)
+		ch <- commentResult{&commentList, err}
+	}(CommentChan, s.db, articleID)
+
+	for i := 0; i < 2; i++ {
+		select {
+		case ar := <-articleChan:
+			article, articleGetError = ar.article, ar.err
+		case cr := <-CommentChan:
+			commentList, commentListGetError = *cr.commentList, cr.err
+		}
+	}
+
+	if commentListGetError != nil {
+		commentListGetError = apperrors.FetchDataFailed.Wrap(commentListGetError, "failed to exec select query")
+		return models.Article{}, commentListGetError
+	}
 	if articleGetError != nil {
 		if errors.Is(articleGetError, sql.ErrNoRows) {
 			articleGetError = apperrors.EmptyData.Wrap(articleGetError, "choose article is not found")
@@ -45,23 +75,7 @@ func (s *MyAppService) GetArticleService(articleID int) (models.Article, error) 
 		articleGetError = apperrors.FetchDataFailed.Wrap(articleGetError, "failed to exec select query")
 		return models.Article{}, articleGetError
 	}
-
-	// 2. repositorries層の関数SelectCommentListでコメント一覧を取得
-	go func(db *sql.DB, articleID int) {
-		defer wg.Done()
-
-		// critical section
-		cmu.Lock()
-		commentList, commentListGetError = repositories.SelectCommentList(db, articleID)
-		cmu.Unlock()
-	}(s.db, articleID)
-	if commentListGetError != nil {
-		commentListGetError = apperrors.FetchDataFailed.Wrap(commentListGetError, "failed to exec select query")
-		return models.Article{}, commentListGetError
-	}
-
 	// 3. 2で得たコメント一覧を1で得たArticle構造体に紐づける
-	wg.Wait() // wait above 2 sub goroutine
 	article.CommentList = append(article.CommentList, commentList...)
 
 	return article, nil
