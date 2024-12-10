@@ -14,24 +14,66 @@ import (
 
 // 指定IDの記事をデータベースから取得してくる
 func (s *MyAppService) GetArticleService(articleID int) (models.Article, error) {
+	// make vertex to deal with (article, err) at the same time
+	type articleResult struct {
+		article models.Article
+		err     error
+	}
+	// chan
+	articleChan := make(chan articleResult)
+	defer close(articleChan)
+
 	// 1. repositories層の関数SelectArticleDetailで記事の詳細を取得
-	article, err := repositories.SelectArticleDetail(s.db, articleID)
+	var article models.Article
+	var commentList []models.Comment
+	var articleGetError, commentListGetError error
+
+	go func(ch chan<- articleResult, db *sql.DB, articleID int) {
+		// critical section
+		article, err := repositories.SelectArticleDetail(db, articleID)
+		ch <- articleResult{article, err}
+	}(articleChan, s.db, articleID)
+
 	// error have two types:
 	// 1. not found error(article id not found)
 	// 2. database error (Internal server error)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			err = apperrors.EmptyData.Wrap(err, "choose article is not found")
-			return models.Article{}, err
-		}
-		err = apperrors.FetchDataFailed.Wrap(err, "failed to exec select query")
-		return models.Article{}, err
+
+	// make vertex to deal with (commentList, err) at the same time
+	type commentResult struct {
+		commentList *[]models.Comment
+		err         error
 	}
+	// chan
+	CommentChan := make(chan commentResult)
+	defer close(CommentChan)
+
 	// 2. repositorries層の関数SelectCommentListでコメント一覧を取得
-	commentList, err := repositories.SelectCommentList(s.db, articleID)
-	if err != nil {
-		err = apperrors.FetchDataFailed.Wrap(err, "failed to exec select query")
-		return models.Article{}, err
+	go func(ch chan<- commentResult, db *sql.DB, articleID int) {
+		// critical section
+		commentList, err := repositories.SelectCommentList(db, articleID)
+		ch <- commentResult{&commentList, err}
+	}(CommentChan, s.db, articleID)
+
+	for i := 0; i < 2; i++ {
+		select {
+		case ar := <-articleChan:
+			article, articleGetError = ar.article, ar.err
+		case cr := <-CommentChan:
+			commentList, commentListGetError = *cr.commentList, cr.err
+		}
+	}
+
+	if commentListGetError != nil {
+		commentListGetError = apperrors.FetchDataFailed.Wrap(commentListGetError, "failed to exec select query")
+		return models.Article{}, commentListGetError
+	}
+	if articleGetError != nil {
+		if errors.Is(articleGetError, sql.ErrNoRows) {
+			articleGetError = apperrors.EmptyData.Wrap(articleGetError, "choose article is not found")
+			return models.Article{}, articleGetError
+		}
+		articleGetError = apperrors.FetchDataFailed.Wrap(articleGetError, "failed to exec select query")
+		return models.Article{}, articleGetError
 	}
 	// 3. 2で得たコメント一覧を1で得たArticle構造体に紐づける
 	article.CommentList = append(article.CommentList, commentList...)
