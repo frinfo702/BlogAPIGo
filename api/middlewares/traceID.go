@@ -24,11 +24,13 @@ func newTraceID() int {
 
 func SetTraceID(ctx context.Context, traceID int) context.Context {
 	// add context to ctx {key, value}
-	return context.WithValue(ctx, "traceID", traceID)
+	return context.WithValue(ctx, traceIDKey{}, traceID)
 }
 
+type traceIDKey struct{}
+
 func GetTraceID(ctx context.Context) int {
-	id := ctx.Value("traceID")
+	id := ctx.Value(traceIDKey{})
 
 	// Value method returns any type, so type-assertion is needed
 	if idInt, ok := id.(int); ok {
