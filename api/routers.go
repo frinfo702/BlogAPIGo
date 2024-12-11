@@ -23,7 +23,7 @@ func NewRouter(db *sql.DB) *mux.Router {
 	r.HandleFunc("/article/nice", aCon.PostNiceHandler).Methods(http.MethodPost)
 	r.HandleFunc("/comment", cCon.PostCommentHandler).Methods(http.MethodPost)
 
-	r.Use(middlewares.LoggingMiddleware) // 全てのハンドラにミドルウェアを適用
+	r.Use(middlewares.LoggingMiddleware) // middleware applys all hendlers
 	return r
 
 }

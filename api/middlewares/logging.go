@@ -24,13 +24,15 @@ func (rsw *resLoggingWriter) WriteHeader(code int) {
 // func myMiddleware(next http.Handler) http.Handler
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		traceID := newTraceID()
+
 		// loging request information
-		log.Println(req.URL, req.Method) // print the request URL and method
+		log.Printf("[%d]%s: %s\n", traceID, req.RequestURI, req.Method)
 
 		rlw := NewResLoggingWriter(w)
 		// return the response
 		next.ServeHTTP(rlw, req) // pass the request to the next handler
 		// logging the content of responses
-		log.Println("res: ", rlw.code)
+		log.Printf("[%d]res: %d", traceID, rlw.code)
 	})
 }
