@@ -1,6 +1,9 @@
 package middlewares
 
-import "sync"
+import (
+	"context"
+	"sync"
+)
 
 // var sharable resources
 var (
@@ -17,4 +20,20 @@ func newTraceID() int {
 	mu.Unlock()
 
 	return no
+}
+
+func SetTraceID(ctx context.Context, traceID int) context.Context {
+	// add context to ctx {key, value}
+	return context.WithValue(ctx, "traceID", traceID)
+}
+
+func GetTraceID(ctx context.Context) int {
+	id := ctx.Value("traceID")
+
+	// Value method returns any type, so type-assertion is needed
+	if idInt, ok := id.(int); ok {
+		return idInt
+	}
+
+	return 0
 }
